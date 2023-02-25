@@ -9,6 +9,7 @@ import robot from "robotjs";
 import sharp from "sharp";
 import { queryOpenWindows } from "./queryOpenWindows";
 import { Bbox, createWorker, OEM, PSM, RecognizeResult } from "tesseract.js";
+import { waitMillis } from "./waitMillis";
 
 function recognize(imageLike: Buffer): Promise<RecognizeResult> {
   return new Promise(async (resolve) => {
@@ -48,10 +49,6 @@ export async function annotateImage(content: Buffer): Promise<[google.cloud.visi
       }
     ]
   });
-}
-
-function waitMillis(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function screenshotOpenWindows() {
@@ -117,8 +114,12 @@ async function screenshotOpenWindows() {
           consola.info("Creating folder", folder);
           fs.mkdirSync(folder, { recursive: true });
         }
-        const outImg = path.join(folder, `${title}.png`);
-        const outJson = path.join(folder, `${title}.json`);
+        const filename = title //
+          .replace(/[^a-z0-9]+/gi, "_") //
+          .toLowerCase() //
+          .slice(0, 50); //
+        const outImg = path.join(folder, `${filename}.png`);
+        const outJson = path.join(folder, `${filename}.json`);
         consola.start("Writing", outImg);
         const croppedData = await cropped;
         consola.start("Recognizing", outImg);
