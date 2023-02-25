@@ -30,5 +30,6 @@ try
     end repeat
   end tell
 on error errStr number errNum
+  set myOutput to {myOutput & "\n" & {"error=" & errStr & " (" & errNum & ")"}}
 end try
 copy myOutput to stdout
