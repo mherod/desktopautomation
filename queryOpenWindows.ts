@@ -12,18 +12,18 @@ export async function queryOpenWindows(): Promise<DesktopProcess[]> {
   );
   fs.writeFileSync("output.txt", output, "utf8");
   const unpacked = unpackOutput(output);
-  const unpacked2 = [];
+  const transformed = [];
   for (const p in unpacked) {
-    const ww = [];
+    const windows = [];
     for (const w in unpacked[p]) {
-      ww.push(unpacked[p][w]);
+      windows.push(unpacked[p][w]);
     }
     const k = "processName";
-    unpacked2.push({
-      [k]: value<string>(ww, k),
-      windows: ww
+    transformed.push({
+      [k]: value<string>(windows, k),
+      windows
     });
   }
-  fs.writeFileSync("output.json", JSON.stringify(unpacked2, null, 2));
-  return unpacked2;
+  fs.writeFileSync("output.json", JSON.stringify(transformed, null, 2));
+  return transformed;
 }
