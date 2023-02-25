@@ -1,3 +1,5 @@
-export function value<T>(items: { [k: string]: T }[], k: string): T {
-  return items.find(w => w[k])[k];
+type Value<T> = { [k: string]: T };
+
+export function value<T>(items: Value<T>[] | Value<T>, k: string): T {
+  return Array.isArray(items) ? items.find(w => w[k])[k] : items[k] as T;
 }

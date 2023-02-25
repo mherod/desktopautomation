@@ -7,7 +7,7 @@ import { ImageAnnotatorClient } from "@google-cloud/vision";
 import { google } from "@google-cloud/vision/build/protos/protos";
 import robot from "robotjs";
 import sharp from "sharp";
-import { getDesktop } from "./getDesktop";
+import { queryOpenWindows } from "./queryOpenWindows";
 import { Bbox, createWorker, OEM, PSM, RecognizeResult } from "tesseract.js";
 
 function recognize(imageLike: Buffer): Promise<RecognizeResult> {
@@ -57,7 +57,7 @@ function waitMillis(ms: number) {
 async function screenshotOpenWindows() {
   try {
     consola.start("Querying for open desktop windows");
-    const desktopPromise = getDesktop();
+    const desktopPromise = queryOpenWindows();
     const screenshotPromise = screenshot();
     const processes = await desktopPromise;
     consola.success("Found", processes.length, "open desktop windows");
