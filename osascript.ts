@@ -6,7 +6,9 @@ async function execute(
 ): Promise<string> {
   const command1 = Array.isArray(command) ? Array.from(command).join("\n") : command;
   return new Promise((resolve, reject) => {
-    const escaped = command1.replace(`'`, `"`).trim();
+    const escaped = command1 //
+      .replace(/--[^\n]+/ig, ``) // comments
+      .trim();
     const command0 = `osascript -e '${escaped}'`;
     exec(command0, (
       err,
