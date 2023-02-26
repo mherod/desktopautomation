@@ -8,7 +8,7 @@ import { google } from "@google-cloud/vision/build/protos/protos";
 import robot from "robotjs";
 import sharp from "sharp";
 import { queryOpenWindows } from "./queryOpenWindows";
-import { Bbox, createWorker, OEM, PSM, RecognizeResult } from "tesseract.js";
+import Tesseract, { Bbox, createWorker, OEM, PSM, RecognizeResult } from "tesseract.js";
 import { waitMillis } from "./waitMillis";
 
 function recognize(imageLike: Buffer): Promise<RecognizeResult> {
@@ -49,6 +49,58 @@ export async function annotateImage(content: Buffer): Promise<[google.cloud.visi
       }
     ]
   });
+}
+
+interface ClickFromResultParams {
+  recognizeResult: Tesseract.RecognizeResult;
+  searchString: string | RegExp;
+  leftOffset: number;
+  topOffset: number;
+  scale: number;
+}
+
+async function clickFromResult(
+  //
+  {
+    recognizeResult,
+    searchString,
+    leftOffset = 0,
+    topOffset = 0,
+    scale = 1
+//
+  }: ClickFromResultParams) {
+  for (const block of recognizeResult.data.blocks) {
+    if (!block.text.match(searchString)) {
+      // consola.warn("Skipping", block.text);
+      continue;
+    }
+    const trim = block.text.trim();
+    const bbox: Bbox = block.bbox;
+    consola.success("Found", trim, bbox);
+    let x = (bbox.x0 + bbox.x1) / 2;
+    let y = (bbox.y0 + bbox.y1) / 2;
+    const rx = (leftOffset + x) / scale;
+    const ry = (topOffset + y) / scale;
+    robot.moveMouseSmooth(
+      rx,
+      ry - 100
+    );
+    await waitMillis(800);
+    robot.mouseClick();
+    await waitMillis(800);
+    robot.moveMouseSmooth(
+      rx,
+      ry
+    );
+    await waitMillis(800);
+    robot.mouseClick();
+    robot.moveMouseSmooth(
+      rx,
+      ry + 80
+    );
+    await waitMillis(800);
+    robot.mouseClick();
+  }
 }
 
 async function screenshotOpenWindows() {
@@ -124,38 +176,13 @@ async function screenshotOpenWindows() {
         const croppedData = await cropped;
         consola.start("Recognizing", outImg);
         const recognizeResult = await recognize(croppedData);
-        for (const block of recognizeResult.data.blocks) {
-          if (!block.text.includes("not a robot")) {
-            // consola.warn("Skipping", block.text);
-            continue;
-          }
-          const trim = block.text.trim();
-          const bbox: Bbox = block.bbox;
-          consola.success("Found", trim, bbox);
-          let x = (bbox.x0 + bbox.x1) / 2;
-          let y = (bbox.y0 + bbox.y1) / 2;
-          const rx = (left + x) / scale;
-          const ry = (top + y) / scale;
-          robot.moveMouseSmooth(
-            rx,
-            ry - 100
-          );
-          await waitMillis(800);
-          robot.mouseClick();
-          await waitMillis(800);
-          robot.moveMouseSmooth(
-            rx,
-            ry
-          );
-          await waitMillis(800);
-          robot.mouseClick();
-          robot.moveMouseSmooth(
-            rx,
-            ry + 80
-          );
-          await waitMillis(800);
-          robot.mouseClick();
-        }
+        await clickFromResult({
+          recognizeResult: recognizeResult,
+          leftOffset: left,
+          topOffset: top,
+          scale: scale,
+          searchString: /not a robot\s+$/
+        });
         consola.success("Recognized", outImg);
         fs.writeFileSync(outImg, croppedData);
         fs.writeFileSync(
@@ -216,8 +243,11 @@ async function readInput(
 }
 
 async function main() {
-  await screenshotOpenWindows();
-  await waitMillis(2000);
+  consola.start("Starting");
+  while (true) {
+    await screenshotOpenWindows();
+    await waitMillis(1000);
+  }
   consola.success("Done");
 }
 
